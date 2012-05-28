@@ -24,6 +24,7 @@
 
       self.selector = selector;
       self.options = $.extend( {}, $.fn.scrollbox.options, opts);
+      self.options.history = (self.options.history && History !== undefined);
 
       self.cycle();
     },
@@ -211,6 +212,7 @@
   $.fn.scrollbox.options = {
     preventScroll: true,
     maxWidth: false,
+    history: false,
 
     beforeOpen: $.noop,
     afterOpen: $.noop,
