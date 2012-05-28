@@ -117,11 +117,18 @@
 
     bindCloseEvent: function () {
       var self = this;
+
       // Close scrollbox if click anywhere outside
       $('body').on('click', function (event) {
         var panelClicked = $(event.target).closest('.scrollbox-panels').length > 0;
 
         if(self.open && panelClicked === false) {
+          self.hide( true );
+        }
+      }).on('keydown', function (event) {
+        var key = event.which;
+
+        if(self.open && key === 27) {
           self.hide( true );
         }
       });
