@@ -180,7 +180,7 @@
     bindOpenEvent: function () {
       var self = this;
 
-      $(self.selector).on('click', function (event) {
+      $(self.options.container).on('click', self.selector, function (event) {
         var $this = $(this),
             url = $this.attr('href'),
             title = $this.attr('title') || document.title;
@@ -271,9 +271,11 @@
   };
 
   $.fn.hotbox.options = {
+
     preventScroll: true,
     maxWidth: false,
     history: false,
+    container: 'body',
 
     beforeOpen: $.noop,
     afterOpen: $.noop,
