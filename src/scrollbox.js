@@ -112,7 +112,6 @@
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
         self.options.afterOpen.apply(self.$container);
-        self.$container.focus();
       });
     },
 
