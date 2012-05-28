@@ -1,4 +1,4 @@
-// Scrollbox
+// hotbox
 (function ($, window, document, undefined) {
 
   // Helper function to create unique instances of object literals
@@ -18,12 +18,12 @@
       HOME_KEYS   = [35, 36],
       SCROLL_KEYS = [33, 34, 35, 36, 38, 40];
 
-  var Scrollbox = {
+  var Hotbox = {
     init: function (selector, opts) {
       var self = this;
 
       self.selector = selector;
-      self.options = $.extend( {}, $.fn.scrollbox.options, opts);
+      self.options = $.extend( {}, $.fn.hotbox.options, opts);
       self.options.history = (self.options.history && History !== undefined);
 
       self.title = document.title;
@@ -134,12 +134,12 @@
 
     createOverlay: function () {
       var self = this,
-          $overlay = $('#scrollbox-overlay');
+          $overlay = $('#hotbox-overlay');
 
       if ($overlay.length === 0) {
         $overlay = $('<div></div>', {
-          id: 'scrollbox-overlay',
-          'class': 'scrollbox-overlay'
+          id: 'hotbox-overlay',
+          'class': 'hotbox-overlay'
         }).prependTo('body');
       }
       self.$overlay = $overlay;
@@ -147,15 +147,15 @@
 
     createContainer: function () {
       var self = this,
-          $container = self.$overlay.find('#scrollbox-content');
+          $container = self.$overlay.find('#hotbox-content');
 
       if($container.length === 0) {
         $container = $('<div></div>', {
-          id: 'scrollbox-content',
-          'class': 'scrollbox-content'
+          id: 'hotbox-content',
+          'class': 'hotbox-content'
         })
         .append($('<div></div>', {
-            'class': 'scrollbox-panels'
+            'class': 'hotbox-panels'
         }))
         .appendTo(self.$overlay);
       }
@@ -166,7 +166,7 @@
         });
       }
 
-      self.$container = $container.find('.scrollbox-panels');
+      self.$container = $container.find('.hotbox-panels');
     },
 
     bindEvents: function () {
@@ -196,9 +196,9 @@
     bindCloseEvent: function () {
       var self = this;
 
-      // Close scrollbox if click anywhere outside
+      // Close hotbox if click anywhere outside
       $('body').on('click', function (event) {
-        var panelClicked = $(event.target).closest('.scrollbox-panels').length > 0;
+        var panelClicked = $(event.target).closest('.hotbox-panels').length > 0;
 
         if(self.open && panelClicked === false) {
           self.revertHistory();
@@ -265,12 +265,12 @@
     }
   };
 
-  $.fn.scrollbox = function(opts) {
-    var scrollbox = Object.create( Scrollbox );
-    scrollbox.init(this.selector, opts);
+  $.fn.hotbox = function(opts) {
+    var hotbox = Object.create( Hotbox );
+    hotbox.init(this.selector, opts);
   };
 
-  $.fn.scrollbox.options = {
+  $.fn.hotbox.options = {
     preventScroll: true,
     maxWidth: false,
     history: false,
