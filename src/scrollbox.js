@@ -26,17 +26,110 @@
       self.options = $.extend( {}, $.fn.scrollbox.options, opts);
       self.options.history = (self.options.history && History !== undefined);
 
+      self.title = document.title;
+      self.startURL = location.href;
+
       self.cycle();
     },
 
     cycle: function () {
       var self = this;
+      if(self.options.history) {
+        self.enableHistory();
+      } else {
+        self.disableHistory();
+      }
       self.createOverlay();
       self.createContainer();
       self.bindEvents();
       if(self.options.preventScroll) {
         self.preventScrolling();
       }
+    },
+
+
+    enableHistory: function () {
+      var self = this;
+
+      History.replaceState(null, document.title, document.location);
+      self.bindStateChangeEvent();
+    },
+
+    bindStateChangeEvent: function () {
+      var self = this;
+
+      History.Adapter.bind(window,'statechange',function() {
+        var state = History.getState();
+
+        if(state.data && state.data.open === 1) {
+          self.process();
+        } else {
+          self.hide( true );
+        }
+      });
+    },
+
+    process: function () {
+      var self = this;
+
+      self.downloadContent().then(self.display());
+    },
+
+    downloadContent: function () {
+      var self = this;
+
+      return $.ajax({
+        url: self.url,
+        dataType: 'html'
+      }).done(function (html) {
+        self.html = html;
+        self.$container.html(html);
+      });
+    },
+
+    display: function () {
+      var self = this;
+
+      self.options.beforeOpen.apply(self.$container);
+
+      self.$overlay.fadeIn( 100, function () {
+        self.open = true;
+        self.options.afterOpen.apply(self.$container);
+      });
+    },
+
+    hide: function ( emptyContainer ) {
+      var self = this;
+
+      emptyContainer = emptyContainer || false;
+      self.options.beforeClose.apply(self.$container);
+
+      self.$overlay.fadeOut( 100, function () {
+        self.open = false;
+        if (emptyContainer) {
+          self.$container.empty();
+        }
+        self.options.afterClose.apply(self.$container);
+      });
+    },
+
+    disableHistory: function () {
+      var self = this;
+
+      self.updateHistory = self.process;
+      self.revertHistory = self.hide;
+    },
+
+    updateHistory: function () {
+      var self = this;
+
+      History.replaceState({open: 1}, self.title, self.url);
+    },
+
+    revertHistory: function () {
+      var self = this;
+
+      History.replaceState(null, self.title, self.startURL);
     },
 
     createOverlay: function () {
@@ -81,38 +174,22 @@
 
       self.bindOpenEvent();
       self.bindCloseEvent();
+
     },
 
     bindOpenEvent: function () {
       var self = this;
+
       $(self.selector).on('click', function (event) {
         var $this = $(this),
-            url = $this.attr('href');
+            url = $this.attr('href'),
+            title = $this.attr('title') || document.title;
 
         event.preventDefault();
-        self.downloadContentFrom(url).then(self.display());
-      });
-    },
+        self.title = title;
+        self.url = url;
 
-    downloadContentFrom: function (url) {
-      var self = this;
-      return $.ajax({
-        url: url,
-        dataType: 'html'
-      }).done(function (html) {
-        self.html = html;
-        self.$container.html(html);
-      });
-    },
-
-    display: function () {
-      var self = this;
-
-      self.options.beforeOpen.apply(self.$container);
-
-      self.$overlay.fadeIn( 100, function () {
-        self.open = true;
-        self.options.afterOpen.apply(self.$container);
+        self.updateHistory();
       });
     },
 
@@ -124,29 +201,14 @@
         var panelClicked = $(event.target).closest('.scrollbox-panels').length > 0;
 
         if(self.open && panelClicked === false) {
-          self.hide( true );
+          self.revertHistory();
         }
       }).on('keydown', function (event) {
         var key = event.which;
 
         if(self.open && key === 27) {
-          self.hide( true );
+          self.revertHistory();
         }
-      });
-    },
-
-    hide: function ( emptyContainer ) {
-      var self = this;
-
-      emptyContainer = emptyContainer || false;
-      self.options.beforeClose.apply(self.$container);
-
-      self.$overlay.fadeOut( 100, function () {
-        self.open = false;
-        if (emptyContainer) {
-          self.$container.empty();
-        }
-        self.options.afterClose.apply(self.$container);
       });
     },
 
@@ -201,7 +263,6 @@
         });
       }
     }
-
   };
 
   $.fn.scrollbox = function(opts) {
