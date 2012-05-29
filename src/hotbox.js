@@ -343,14 +343,18 @@
 
     setupNavigation: function () {
       var self = this,
-          groups = self.groups[self.$element.attr('rel')];
+          groups = self.groups[self.$element.attr('rel')],
+          buttonSelector = '.'+self.options.nextClass + ',.' + self.options.prevClass;
 
       $('body').unbind('keydown', navKeyEvent);
+      self.$container.find(buttonSelector).unbind('click', navButtonEvent);
 
-      if(groups !== undefined) {
-        var buttonSelector = '.'+self.options.nextClass + ',.' + self.options.prevClass;
+
+      if(groups !== undefined && groups.length > 1) {
         $('body').on('keydown', navKeyEvent);
         self.$container.find(buttonSelector).on('click', navButtonEvent);
+      } else {
+        self.$container.find(buttonSelector).hide();
       }
     },
 
