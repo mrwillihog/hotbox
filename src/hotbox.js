@@ -200,10 +200,6 @@
       self.setupNavigation();
       finishedLoading();
 
-      $('body').css({
-        overflow: 'hidden'
-      });
-
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
         self.options.afterOpen.apply(self.$container);
@@ -217,15 +213,14 @@
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container);
 
-      $('body').css({
-        overflow: 'auto'
-      });
-
       self.$overlay.fadeOut( delay, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
         }
+        $('body').css({
+          overflow: 'auto'
+        });
         self.options.afterClose.apply(self.$container);
       });
     },
@@ -285,7 +280,6 @@
 
       self.bindOpenEvent();
       self.bindCloseEvent();
-
     },
 
     bindOpenEvent: function () {
@@ -294,6 +288,9 @@
       $(self.options.container).on('click', self.selector, function (event) {
         var $this = $(this);
         event.preventDefault();
+        $('body').css({
+          overflow: 'hidden'
+        });
         self.calculateIndex($this);
         self.loadNewContent($this);
       });
