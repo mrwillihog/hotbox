@@ -20,7 +20,9 @@
       UP_KEYS     = [33, 36, 38],
       DOWN_KEYS   = [34, 35, 40],
       HOME_KEYS   = [35, 36],
-      SCROLL_KEYS = [33, 34, 35, 36, 38, 40];
+      SCROLL_KEYS = [33, 34, 35, 36, 38, 40],
+      RIGHT_ARROW = 39,
+      LEFT_ARROW  = 37;
 
   var bindStateChangeEvent = function () {
     if(typeof History !== 'undefined') {
@@ -37,7 +39,7 @@
     }
   };
 
-  var keydownEvent = function (event) {
+  var scrollKeyEvent = function (event) {
     var self = CURRENT_HOTBOX;
 
     var key = event.which,
@@ -50,7 +52,6 @@
                    $.inArray(key, PAGE_KEYS) > -1 ? PAGE_SCROLL_AMOUNT :
                    self.$overlay.get(0).scrollHeight - self.$overlay.innerHeight(),
           newPosition = currentPosition + amount * direction;
-
       event.preventDefault();
       if(amount > KEY_SCROLL_AMOUNT) {
         self.$overlay.stop().animate({
@@ -76,6 +77,33 @@
     }
   };
 
+  var navKeyEvent = function (event) {
+    var self = CURRENT_HOTBOX;
+
+    var key = event.which,
+        nextKeyPressed = key == RIGHT_ARROW,
+        prevKeyPressed = key == LEFT_ARROW;
+
+    if(nextKeyPressed) {
+      self.next();
+    } else if (prevKeyPressed) {
+      self.prev();
+    }
+  };
+
+  var navButtonEvent = function (event) {
+    var self = CURRENT_HOTBOX,
+        $target = $(event.target);
+
+    event.preventDefault();
+
+    if($target.hasClass(self.options.nextClass)) {
+      self.next();
+    } else if($target.hasClass(self.options.prevClass)) {
+      self.prev();
+    }
+  };
+
   var createLoader = function () {
     LOADER = $loader = $('<div></div>', {
       id: 'hotbox-loader',
@@ -97,10 +125,22 @@
 
       self.selector = selector;
       self.options = $.extend( {}, $.fn.hotbox.options, opts);
-      // self.options.history = (self.options.history && History !== undefined);
 
       self.startTitle = document.title;
       self.startURL = location.href;
+
+      self.groups = {};
+      self.index = 0;
+
+      $(selector).each(function () {
+        var rel = $(this).attr('rel');
+        if(rel !== undefined && self.groups[rel] === undefined) {
+          self.groups[rel] = [];
+          $('[rel="'+rel+'"]').each(function (index, element) {
+            self.groups[rel].push($(this));
+          });
+        }
+      });
 
       self.cycle();
     },
@@ -120,22 +160,29 @@
 
       self.downloadContent().done(function () {
         self.display();
-      }).fail(function () {
-        self.revertHistory();
-        finishedLoading();
+      }).fail(function (event, status) {
+        if(status !== "abort") {
+          self.revertHistory();
+          finishedLoading();
+        }
       });
     },
 
     downloadContent: function () {
       var self = this;
-
-      return $.ajax({
+      if(self.request !== undefined) {
+        self.request.abort();
+      }
+      self.request = $.ajax({
         url: self.url,
         dataType: 'html'
       }).done(function (html) {
+        self.request = undefined;
         self.html = html;
         self.$container.html(html);
       });
+
+      return self.request;
     },
 
     display: function () {
@@ -150,6 +197,7 @@
       }
 
       self.setupScrolling();
+      self.setupNavigation();
       finishedLoading();
 
       self.$overlay.fadeIn( 100, function () {
@@ -158,13 +206,14 @@
       });
     },
 
-    hide: function ( emptyContainer ) {
-      var self = this;
+    hide: function ( emptyContainer, instant ) {
+      var self = this,
+          delay = instant ? 0 : 100;
 
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container);
 
-      self.$overlay.fadeOut( 100, function () {
+      self.$overlay.fadeOut( delay, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
@@ -235,19 +284,28 @@
       var self = this;
 
       $(self.options.container).on('click', self.selector, function (event) {
-        var $this = $(this),
-            url = $this.attr('href'),
-            title = $this.attr('title') || document.title;
-
+        var $this = $(this);
         event.preventDefault();
+        self.loadNewContent($this);
+      });
+    },
+
+    loadNewContent: function (item) {
+      var self = this,
+          url = item.attr('href'),
+          title = item.attr('title') || document.title;
+
+
         self.title = title;
         self.url = url;
+        self.$element = item;
+
+        self.hide( true, true );
 
         CURRENT_HOTBOX = self;
         loading();
 
         self.updateHistory();
-      });
     },
 
     bindCloseEvent: function () {
@@ -272,16 +330,69 @@
     setupScrolling: function () {
       var self = this;
 
+      $('body').unbind('keydown', scrollKeyEvent);
+      self.$overlay.unbind('mousewheel', mousewheelEvent);
+
       if(self.options.preventScroll) {
-        $('body').on('keydown', keydownEvent);
+        $('body').on('keydown', scrollKeyEvent);
         if($.fn.mousewheel) {
           self.$overlay.on('mousewheel', mousewheelEvent);
         }
-      } else {
-        $('body').unbind('keydown', keydownEvent);
-        self.$overlay.unbind('mousewheel', mousewheelEvent);
       }
 
+    },
+
+    setupNavigation: function () {
+      var self = this,
+          groups = self.groups[self.$element.attr('rel')];
+
+      $('body').unbind('keydown', navKeyEvent);
+
+      if(groups !== undefined) {
+        var buttonSelector = '.'+self.options.nextClass + ',.' + self.options.prevClass;
+        $('body').on('keydown', navKeyEvent);
+        self.$container.find(buttonSelector).on('click', navButtonEvent);
+      }
+    },
+
+    next: function () {
+      var self = this;
+      self.loadNewContent(self.nextItem());
+    },
+
+    nextItem: function () {
+      var self = this,
+          index = self.index,
+          groups = self.groups[self.$element.attr('rel')],
+          numItems = groups.length;
+
+      index += 1;
+      if(index >= numItems) {
+        index = 0;
+      }
+
+      self.index = index;
+      return groups[index];
+    },
+
+    prev: function () {
+      var self = this;
+      self.loadNewContent(self.prevItem());
+    },
+
+    prevItem: function () {
+      var self = this,
+          index = self.index,
+          groups = self.groups[self.$element.attr('rel')],
+          numItems = groups.length;
+
+      index -= 1;
+      if(index == -1) {
+        index = numItems - 1;
+      }
+
+      self.index = index;
+      return groups[index];
     }
   };
 
@@ -299,6 +410,8 @@
     maxWidth: false,
     history: false,
     container: 'body',
+    nextClass: 'hotbox-next',
+    prevClass: 'hotbox-prev',
 
     beforeOpen: $.noop,
     afterOpen: $.noop,
