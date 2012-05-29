@@ -127,7 +127,8 @@
       self.options = $.extend( {}, $.fn.hotbox.options, opts);
 
       self.startTitle = document.title;
-      self.startURL = location.href;
+      self.startURL = location.href !== "" ? location.href : "/";
+
 
       self.groups = {};
       self.index = 0;
