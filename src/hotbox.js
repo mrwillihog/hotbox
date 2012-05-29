@@ -10,7 +10,8 @@
   }
 
   var STATE_CHANGE_BOUND = false,
-      CURRENT_HOTBOX;
+      CURRENT_HOTBOX,
+      LOADER;
 
   var KEY_SCROLL_AMOUNT = 40,
       PAGE_SCROLL_AMOUNT = 535,
@@ -75,6 +76,21 @@
     }
   };
 
+  var createLoader = function () {
+    LOADER = $loader = $('<div></div>', {
+      id: 'hotbox-loader',
+      'class': 'hotbox-loader'
+    }).hide().prependTo('body');
+  };
+
+  var loading = function () {
+    LOADER.show();
+  };
+
+  var finishedLoading = function () {
+    LOADER.hide();
+  };
+
   var Hotbox = {
     init: function (selector, opts) {
       var self = this;
@@ -102,7 +118,12 @@
     process: function () {
       var self = this;
 
-      self.downloadContent().then(self.display());
+      self.downloadContent().done(function () {
+        self.display();
+      }).fail(function () {
+        self.revertHistory();
+        finishedLoading();
+      });
     },
 
     downloadContent: function () {
@@ -129,6 +150,7 @@
       }
 
       self.setupScrolling();
+      finishedLoading();
 
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
@@ -222,6 +244,7 @@
         self.url = url;
 
         CURRENT_HOTBOX = self;
+        loading();
 
         self.updateHistory();
       });
@@ -268,6 +291,7 @@
   };
 
   bindStateChangeEvent();
+  createLoader();
 
   $.fn.hotbox.options = {
 
