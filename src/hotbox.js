@@ -200,6 +200,10 @@
       self.setupNavigation();
       finishedLoading();
 
+      $('body').css({
+        overflow: 'hidden'
+      });
+
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
         self.options.afterOpen.apply(self.$container);
@@ -212,6 +216,10 @@
 
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container);
+
+      $('body').css({
+        overflow: 'auto'
+      });
 
       self.$overlay.fadeOut( delay, function () {
         self.open = false;
@@ -332,13 +340,10 @@
       $('body').unbind('keydown', scrollKeyEvent);
       self.$overlay.unbind('mousewheel', mousewheelEvent);
 
-      if(self.options.preventScroll) {
-        $('body').on('keydown', scrollKeyEvent);
-        if($.fn.mousewheel) {
-          self.$overlay.on('mousewheel', mousewheelEvent);
-        }
+      $('body').on('keydown', scrollKeyEvent);
+      if($.fn.mousewheel) {
+        self.$overlay.on('mousewheel', mousewheelEvent);
       }
-
     },
 
     setupNavigation: function () {
@@ -424,8 +429,6 @@
   createLoader();
 
   $.fn.hotbox.options = {
-
-    preventScroll: true,
     maxWidth: false,
     history: false,
     container: 'body',
