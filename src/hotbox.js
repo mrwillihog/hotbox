@@ -300,8 +300,6 @@
         self.url = url;
         self.$element = item;
 
-        self.hide( true, true );
-
         CURRENT_HOTBOX = self;
         loading();
 
