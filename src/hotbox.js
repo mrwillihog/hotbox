@@ -286,6 +286,7 @@
       $(self.options.container).on('click', self.selector, function (event) {
         var $this = $(this);
         event.preventDefault();
+        self.calculateIndex($this);
         self.loadNewContent($this);
       });
     },
@@ -351,6 +352,22 @@
         $('body').on('keydown', navKeyEvent);
         self.$container.find(buttonSelector).on('click', navButtonEvent);
       }
+    },
+
+    calculateIndex: function (item) {
+      var self = this;
+          groups = self.groups[item.attr('rel')],
+          index = 0;
+      if(groups === undefined) return 0;
+
+      $.each(groups, function (i, element) {
+        // Test if 2 jquery objects are equal, probably non-optimal
+        if(item[0] === $(element)[0]) {
+          index = i;
+        }
+      });
+      self.index = index;
+      return index;
     },
 
     next: function () {
