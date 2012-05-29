@@ -9,6 +9,9 @@
     };
   }
 
+  var STATE_CHANGE_BOUND = false,
+      CURRENT_HOTBOX;
+
   var KEY_SCROLL_AMOUNT = 40,
       PAGE_SCROLL_AMOUNT = 535,
       ARROW_KEYS  = [38, 40],
@@ -18,47 +21,10 @@
       HOME_KEYS   = [35, 36],
       SCROLL_KEYS = [33, 34, 35, 36, 38, 40];
 
-  var Hotbox = {
-    init: function (selector, opts) {
-      var self = this;
-
-      self.selector = selector;
-      self.options = $.extend( {}, $.fn.hotbox.options, opts);
-      self.options.history = (self.options.history && History !== undefined);
-
-      self.title = document.title;
-      self.startURL = location.href;
-
-      self.cycle();
-    },
-
-    cycle: function () {
-      var self = this;
-      if(self.options.history) {
-        self.enableHistory();
-      } else {
-        self.disableHistory();
-      }
-      self.createOverlay();
-      self.createContainer();
-      self.bindEvents();
-      if(self.options.preventScroll) {
-        self.preventScrolling();
-      }
-    },
-
-
-    enableHistory: function () {
-      var self = this;
-
-      History.replaceState(null, document.title, document.location);
-      self.bindStateChangeEvent();
-    },
-
-    bindStateChangeEvent: function () {
-      var self = this;
-
+  var bindStateChangeEvent = function () {
+    if(typeof History !== 'undefined') {
       History.Adapter.bind(window,'statechange',function() {
+        var self = CURRENT_HOTBOX;
         var state = History.getState();
 
         if(state.data && state.data.open === 1) {
@@ -67,6 +33,70 @@
           self.hide( true );
         }
       });
+    }
+  };
+
+  var keydownEvent = function (event) {
+    var self = CURRENT_HOTBOX;
+
+    var key = event.which,
+        scrollKeyPressed = $.inArray(key, SCROLL_KEYS) > -1;
+
+    if(self.open && scrollKeyPressed) {
+      var currentPosition = self.$overlay.scrollTop(),
+          direction = $.inArray(key, UP_KEYS) > -1 ? -1 : 1,
+          amount = $.inArray(key, ARROW_KEYS) > -1 ? KEY_SCROLL_AMOUNT :
+                   $.inArray(key, PAGE_KEYS) > -1 ? PAGE_SCROLL_AMOUNT :
+                   self.$overlay.get(0).scrollHeight - self.$overlay.innerHeight(),
+          newPosition = currentPosition + amount * direction;
+
+      event.preventDefault();
+      if(amount > KEY_SCROLL_AMOUNT) {
+        self.$overlay.stop().animate({
+          scrollTop: newPosition
+        }, 200);
+      } else {
+        self.$overlay.scrollTop( newPosition );
+      }
+    }
+  };
+
+  var mousewheelEvent = function (event, delta, deltaX, deltaY) {
+    var self = CURRENT_HOTBOX;
+
+    var scrollingUp = deltaY > 0,
+        scrollingDown = !scrollingUp,
+        $this = $(this);
+
+    if (scrollingUp && $this.scrollTop() === 0) {
+      event.preventDefault();
+    } else if (scrollingDown &&  $this.scrollTop() == $this.get(0).scrollHeight - $this.innerHeight()) {
+      event.preventDefault();
+    }
+  };
+
+  var Hotbox = {
+    init: function (selector, opts) {
+      var self = this;
+
+      self.selector = selector;
+      self.options = $.extend( {}, $.fn.hotbox.options, opts);
+      // self.options.history = (self.options.history && History !== undefined);
+
+      self.startTitle = document.title;
+      self.startURL = location.href;
+
+      self.cycle();
+    },
+
+    cycle: function () {
+      var self = this;
+      if(!self.options.history) {
+        self.disableHistory();
+      }
+      self.createOverlay();
+      self.createContainer();
+      self.bindEvents();
     },
 
     process: function () {
@@ -91,6 +121,14 @@
       var self = this;
 
       self.options.beforeOpen.apply(self.$container);
+
+      if (self.options.maxWidth) {
+        self.$container.parent().css({
+          'max-width': self.options.maxWidth
+        });
+      }
+
+      self.setupScrolling();
 
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
@@ -129,7 +167,7 @@
     revertHistory: function () {
       var self = this;
 
-      History.replaceState(null, self.title, self.startURL);
+      History.replaceState(null, self.startTitle, self.startURL);
     },
 
     createOverlay: function () {
@@ -160,12 +198,6 @@
         .appendTo(self.$overlay);
       }
 
-      if (self.options.maxWidth) {
-        $container.css({
-          'max-width': self.options.maxWidth
-        });
-      }
-
       self.$container = $container.find('.hotbox-panels');
     },
 
@@ -188,6 +220,8 @@
         event.preventDefault();
         self.title = title;
         self.url = url;
+
+        CURRENT_HOTBOX = self;
 
         self.updateHistory();
       });
@@ -212,56 +246,19 @@
       });
     },
 
-    preventScrolling: function () {
+    setupScrolling: function () {
       var self = this;
 
-      self.bindKeydownEvent();
-      self.bindMousewheelEvent();
-    },
-
-    bindKeydownEvent: function () {
-      var self = this;
-      $('body').on('keydown', function (event) {
-        var key = event.which,
-            scrollKeyPressed = $.inArray(key, SCROLL_KEYS) > -1;
-
-        if(self.open && scrollKeyPressed) {
-          var currentPosition = self.$overlay.scrollTop(),
-              direction = $.inArray(key, UP_KEYS) > -1 ? -1 : 1,
-              amount = $.inArray(key, ARROW_KEYS) > -1 ? KEY_SCROLL_AMOUNT :
-                       $.inArray(key, PAGE_KEYS) > -1 ? PAGE_SCROLL_AMOUNT :
-                       self.$overlay.get(0).scrollHeight - self.$overlay.innerHeight(),
-              newPosition = currentPosition + amount * direction;
-
-          event.preventDefault();
-          if(amount > KEY_SCROLL_AMOUNT) {
-            self.$overlay.stop().animate({
-              scrollTop: newPosition
-            }, 200);
-          } else {
-            self.$overlay.scrollTop( newPosition );
-          }
+      if(self.options.preventScroll) {
+        $('body').on('keydown', keydownEvent);
+        if($.fn.mousewheel) {
+          self.$overlay.on('mousewheel', mousewheelEvent);
         }
-
-      });
-    },
-
-    bindMousewheelEvent: function () {
-      var self = this;
-      // If we have a mousewheel event, bind to it
-      if($.fn.mousewheel) {
-        self.$overlay.on('mousewheel', function (event, delta, deltaX, deltaY) {
-          var scrollingUp = deltaY > 0,
-              scrollingDown = !scrollingUp,
-              $this = $(this);
-
-          if (scrollingUp && $this.scrollTop() === 0) {
-            event.preventDefault();
-          } else if (scrollingDown &&  $this.scrollTop() == $this.get(0).scrollHeight - $this.innerHeight()) {
-            event.preventDefault();
-          }
-        });
+      } else {
+        $('body').unbind('keydown', keydownEvent);
+        self.$overlay.unbind('mousewheel', mousewheelEvent);
       }
+
     }
   };
 
@@ -269,6 +266,8 @@
     var hotbox = Object.create( Hotbox );
     hotbox.init(this.selector, opts);
   };
+
+  bindStateChangeEvent();
 
   $.fn.hotbox.options = {
 
