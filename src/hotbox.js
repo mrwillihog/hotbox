@@ -6,6 +6,7 @@
     Object.create = function( obj ) {
       function F(){}
       F.prototype = obj;
+      return new F();
     };
   }
 
@@ -25,7 +26,7 @@
       LEFT_ARROW  = 37;
 
   var bindStateChangeEvent = function () {
-    if(typeof History !== 'undefined') {
+    if(typeof History !== 'undefined' && History.enabled) {
       History.Adapter.bind(window,'statechange',function() {
         var self = CURRENT_HOTBOX;
         var state = History.getState();
@@ -129,7 +130,6 @@
       self.startTitle = document.title;
       self.startURL = location.href !== "" ? location.href : "/";
 
-
       self.groups = {};
       self.index = 0;
 
@@ -148,7 +148,7 @@
 
     cycle: function () {
       var self = this;
-      if(!self.options.history) {
+      if(typeof History !== 'undefined' && (!History.enabled || !self.options.history)) {
         self.disableHistory();
       }
       self.createOverlay();
@@ -189,7 +189,7 @@
     display: function () {
       var self = this;
 
-      self.options.beforeOpen.apply(self.$container);
+      self.options.beforeOpen.apply(self.$container, [self]);
 
       if (self.options.maxWidth) {
         self.$container.parent().css({
@@ -201,9 +201,13 @@
       self.setupNavigation();
       finishedLoading();
 
+      $('html').css({
+        overflow: 'hidden'
+      });
+
       self.$overlay.fadeIn( 100, function () {
         self.open = true;
-        self.options.afterOpen.apply(self.$container);
+        self.options.afterOpen.apply(self.$container, [self]);
       });
     },
 
@@ -212,17 +216,17 @@
           delay = instant ? 0 : 100;
 
       emptyContainer = emptyContainer || false;
-      self.options.beforeClose.apply(self.$container);
+      self.options.beforeClose.apply(self.$container, [self]);
 
       self.$overlay.fadeOut( delay, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
         }
-        $('body').css({
+        $('html').css({
           overflow: 'auto'
         });
-        self.options.afterClose.apply(self.$container);
+        self.options.afterClose.apply(self.$container, [self]);
       });
     },
 
@@ -289,9 +293,6 @@
       $(self.options.container).on('click', self.selector, function (event) {
         var $this = $(this);
         event.preventDefault();
-        $('body').css({
-          overflow: 'hidden'
-        });
         self.calculateIndex($this);
         self.loadNewContent($this);
       });
