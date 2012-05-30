@@ -130,18 +130,8 @@
       self.startTitle = document.title;
       self.startURL = location.href !== "" ? location.href : "/";
 
-      self.groups = {};
+      self.group = [];
       self.index = 0;
-
-      $(selector).each(function () {
-        var rel = $(this).attr('rel');
-        if(rel !== undefined && self.groups[rel] === undefined) {
-          self.groups[rel] = [];
-          $('[rel="'+rel+'"]').each(function (index, element) {
-            self.groups[rel].push($(this));
-          });
-        }
-      });
 
       self.cycle();
     },
@@ -293,9 +283,23 @@
       $(self.options.container).on('click', self.selector, function (event) {
         var $this = $(this);
         event.preventDefault();
+        self.loadGroup($this);
         self.calculateIndex($this);
         self.loadNewContent($this);
       });
+    },
+
+    loadGroup: function (item) {
+      var self = this,
+          rel = item.attr('rel');
+
+      self.group = [];
+
+      if(rel !== undefined) {
+        $('[rel="'+rel+'"]').each(function (index, element) {
+          self.group.push($(this));
+        });
+      }
     },
 
     loadNewContent: function (item) {
@@ -347,14 +351,13 @@
 
     setupNavigation: function () {
       var self = this,
-          groups = self.groups[self.$element.attr('rel')],
           buttonSelector = '.'+self.options.nextClass + ',.' + self.options.prevClass;
 
       $('body').unbind('keydown', navKeyEvent);
       self.$container.find(buttonSelector).unbind('click', navButtonEvent);
 
 
-      if(groups !== undefined && groups.length > 1) {
+      if(self.group.length > 1) {
         $('body').on('keydown', navKeyEvent);
         self.$container.find(buttonSelector).on('click', navButtonEvent);
       } else {
@@ -364,11 +367,11 @@
 
     calculateIndex: function (item) {
       var self = this;
-          groups = self.groups[item.attr('rel')],
           index = 0;
-      if(groups === undefined) return 0;
 
-      $.each(groups, function (i, element) {
+      if(self.group.length === 0) return 0;
+
+      $.each(self.group, function (i, element) {
         // Test if 2 jquery objects are equal, probably non-optimal
         if(item[0] === $(element)[0]) {
           index = i;
@@ -386,8 +389,7 @@
     nextItem: function () {
       var self = this,
           index = self.index,
-          groups = self.groups[self.$element.attr('rel')],
-          numItems = groups.length;
+          numItems = self.group.length;
 
       index += 1;
       if(index >= numItems) {
@@ -395,7 +397,7 @@
       }
 
       self.index = index;
-      return groups[index];
+      return self.group[index];
     },
 
     prev: function () {
@@ -406,8 +408,7 @@
     prevItem: function () {
       var self = this,
           index = self.index,
-          groups = self.groups[self.$element.attr('rel')],
-          numItems = groups.length;
+          numItems = self.group.length;
 
       index -= 1;
       if(index == -1) {
@@ -415,7 +416,7 @@
       }
 
       self.index = index;
-      return groups[index];
+      return self.group[index];
     }
   };
 
