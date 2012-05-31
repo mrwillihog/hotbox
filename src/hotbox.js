@@ -1,5 +1,4 @@
-// hotbox
-(function ($, window, document, undefined) {
+;(function ($, window, document, undefined) {
 
   // Helper function to create unique instances of object literals
   if ( typeof Object.create !== 'function' ) {
@@ -191,11 +190,8 @@
       self.setupNavigation();
       finishedLoading();
 
-      $('html').css({
-        overflow: 'hidden'
-      });
-
       self.$overlay.fadeIn( 100, function () {
+        $('html').addClass('hotbox-fixed');
         self.open = true;
         self.options.afterOpen.apply(self.$container, [self]);
       });
@@ -213,9 +209,7 @@
         if (emptyContainer) {
           self.$container.empty();
         }
-        $('html').css({
-          overflow: 'auto'
-        });
+        $('html').removeClass('hotbox-fixed');
         self.options.afterClose.apply(self.$container, [self]);
       });
     },
