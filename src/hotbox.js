@@ -316,7 +316,7 @@
       var self = this;
 
       // Close hotbox if click anywhere outside
-      $('body').on('click', function (event) {
+      $('#hotbox-overlay').on('click', function (event) {
         var panelClicked = $(event.target).closest('.hotbox-panels').length > 0;
 
         if(self.open && panelClicked === false) {
