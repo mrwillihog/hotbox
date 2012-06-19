@@ -11,7 +11,8 @@
 
   var STATE_CHANGE_BOUND = false,
       CURRENT_HOTBOX,
-      LOADER;
+      LOADER,
+      TOUCH_Y;
 
   var KEY_SCROLL_AMOUNT = 40,
       PAGE_SCROLL_AMOUNT = 535,
@@ -70,11 +71,33 @@
         scrollingDown = !scrollingUp,
         $this = $(this);
 
+    console.log('scrolling');
+
     if (scrollingUp && $this.scrollTop() === 0) {
       event.preventDefault();
     } else if (scrollingDown &&  $this.scrollTop() == $this.get(0).scrollHeight - $this.innerHeight()) {
       event.preventDefault();
     }
+  };
+
+  var touchstartEvent = function(event) {
+    TOUCH_Y = event.originalEvent.touches[0].pageY;
+  };
+
+  var touchmoveEvent = function(event) {
+    var $this = $(this),
+        newY = event.originalEvent.touches[0].pageY,
+        delta = TOUCH_Y - newY,
+        scrollingDown = delta > 0,
+        scrollingUp = !scrollingDown;
+
+    if (scrollingUp && $this.scrollTop() === 0) {
+      event.preventDefault();
+    } else if (scrollingDown && $this.scrollTop() == $this.get(0).scrollHeight - $this.innerHeight()) {
+      event.preventDefault();
+    }
+
+    TOUCH_Y = newY;
   };
 
   var navKeyEvent = function (event) {
@@ -336,8 +359,13 @@
 
       $('body').unbind('keydown', scrollKeyEvent);
       self.$overlay.unbind('mousewheel', mousewheelEvent);
+      self.$overlay.unbind('touchmove', touchmoveEvent);
+      self.$overlay.unbind('touchstart', touchstartEvent);
 
       $('body').on('keydown', scrollKeyEvent);
+      self.$overlay.on('touchmove', touchmoveEvent);
+      self.$overlay.on('touchstart', touchstartEvent);
+
       if($.fn.mousewheel) {
         self.$overlay.on('mousewheel', mousewheelEvent);
       }
