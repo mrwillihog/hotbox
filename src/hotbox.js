@@ -215,7 +215,9 @@
       self.scrollYPosition = $(window).scrollTop();
 
       $('html').css({
-        top: -self.scrollYPosition
+        top: -self.scrollYPosition,
+        left: 0,
+        right: 0
       }).addClass('hotbox-fixed');
 
       self.$overlay.show( 0, function () {
@@ -230,18 +232,22 @@
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container, [self]);
 
-      $('html')
-        .removeClass('hotbox-fixed')
-        .css({
-          top: 'auto'
-        });
-      $(window).scrollTop(self.scrollYPosition);
+
 
       self.$overlay.hide( 0, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
         }
+
+        $('html')
+        .removeClass('hotbox-fixed')
+        .css({
+          top: 'auto',
+          left: 'auto',
+          right: 'auto'
+        });
+        $(window).scrollTop(self.scrollYPosition);
 
         self.options.afterClose.apply(self.$container, [self]);
       });
