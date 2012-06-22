@@ -71,8 +71,6 @@
         scrollingDown = !scrollingUp,
         $this = $(this);
 
-    console.log('scrolling');
-
     if (scrollingUp && $this.scrollTop() === 0) {
       event.preventDefault();
     } else if (scrollingDown &&  $this.scrollTop() == $this.get(0).scrollHeight - $this.innerHeight()) {
@@ -212,22 +210,20 @@
       self.setupScrolling();
       self.setupNavigation();
       finishedLoading();
-
-      self.$overlay.fadeIn( 100, function () {
-        $('html').addClass('hotbox-fixed');
+      $('html').addClass('hotbox-fixed');
+      self.$overlay.show( 0, function () {
         self.open = true;
         self.options.afterOpen.apply(self.$container, [self]);
       });
     },
 
-    hide: function ( emptyContainer, instant ) {
-      var self = this,
-          delay = instant ? 0 : 100;
+    hide: function ( emptyContainer ) {
+      var self = this;
 
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container, [self]);
 
-      self.$overlay.fadeOut( delay, function () {
+      self.$overlay.hide( 0, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
