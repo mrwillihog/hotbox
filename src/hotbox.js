@@ -210,7 +210,14 @@
       self.setupScrolling();
       self.setupNavigation();
       finishedLoading();
-      $('html').addClass('hotbox-fixed');
+
+      // Store the current scroll position so we can restore it once the hotbox is closed
+      self.scrollYPosition = $(window).scrollTop();
+
+      $('html').css({
+        top: -self.scrollYPosition
+      }).addClass('hotbox-fixed');
+
       self.$overlay.show( 0, function () {
         self.open = true;
         self.options.afterOpen.apply(self.$container, [self]);
@@ -223,12 +230,19 @@
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container, [self]);
 
+      $('html')
+        .removeClass('hotbox-fixed')
+        .css({
+          top: 'auto'
+        });
+      $(window).scrollTop(self.scrollYPosition);
+
       self.$overlay.hide( 0, function () {
         self.open = false;
         if (emptyContainer) {
           self.$container.empty();
         }
-        $('html').removeClass('hotbox-fixed');
+
         self.options.afterClose.apply(self.$container, [self]);
       });
     },
