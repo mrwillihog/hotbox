@@ -224,6 +224,7 @@
         self.open = true;
         self.options.afterOpen.apply(self.$container, [self]);
       });
+
     },
 
     hide: function ( emptyContainer ) {
@@ -231,9 +232,8 @@
 
       emptyContainer = emptyContainer || false;
       self.options.beforeClose.apply(self.$container, [self]);
-
-
-
+      // Reset scrollTop ready for next hotbox
+      self.$overlay.scrollTop(0);
       self.$overlay.hide( 0, function () {
         self.open = false;
         if (emptyContainer) {
@@ -247,6 +247,7 @@
           left: 'auto',
           right: 'auto'
         });
+
         $(window).scrollTop(self.scrollYPosition);
 
         self.options.afterClose.apply(self.$container, [self]);
